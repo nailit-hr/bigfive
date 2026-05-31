@@ -185,9 +185,10 @@ input:focus,select:focus{border-color:var(--border2)}
     <div style="font-size:28px;margin-bottom:.75rem">🔐</div>
     <h2>ダッシュボード</h2>
     <p>管理者コードを入力してください</p>
-    <input type="password" id="lockInput" placeholder="••••" maxlength="20">
+    <input type="password" id="lockInput" placeholder="••••" maxlength="8">
     <button onclick="checkLock()">ログイン</button>
     <div class="lock-err" id="lockErr">コードが違います</div>
+    <div style="margin-top:1rem;font-size:11px;color:var(--hint)">デフォルト: <code>1234</code></div>
   </div>
 </div>
 
@@ -209,8 +210,7 @@ input:focus,select:focus{border-color:var(--border2)}
   <div class="diag-hero">
     <div class="label-sm">Big Five — OCEAN Assessment</div>
     <h1><strong>性格特性診断</strong></h1>
-    <p>あなたの強みや働き方の特徴を可視化するパーソナリティ診断</p>
-<p>所要時間：約5〜8分</p>
+    <p>採用・組織開発のための科学的パーソナリティ測定<br>所要時間：約5〜8分</p>
   </div>
 
   <div id="startForm">
@@ -225,10 +225,6 @@ input:focus,select:focus{border-color:var(--border2)}
       </div>
     </div>
     <div style="text-align:center"><button class="btn-main on" onclick="startDiag()">診断を開始する →</button></div>
-    <p style="font-size:12px;color:#666;text-align:center;margin-top:15px;line-height:1.6;">
-※診断結果は選考の合否判断のみを目的とするものではなく、<br>
-面接時の相互理解や入社後の活躍支援の参考として活用します。
-</p>
   </div>
 
   <div id="quizArea" style="display:none">
@@ -437,7 +433,7 @@ let gasUrl='';
 
 // ===== INIT =====
 function init(){
-  gasUrl=localStorage.getItem('bf_gas_url')||'https://script.google.com/macros/s/AKfycbyTw3VVMAMnjMT9Pqk9eUU8q1aT7JW3B3Mm7INO2m1vaBWY2huKptZrGLatn3EADKnlLw/exec';
+  gasUrl=localStorage.getItem('bf_gas_url')||'https://script.google.com/macros/s/AKfycbwJUemu_ucNuKDzoQIqLfTKr0FcaGi6pHxUsV9UXXmRc4oRvHL_lxoSJp3xGJjl35yadg/exec';
   if(gasUrl) document.getElementById('gasUrlInput').value=gasUrl;
   updateGsStatus();
 }
@@ -787,6 +783,7 @@ function renderDash(){
   }
 
   renderCharts(fm, avgs);
+  renderCompareChart();
 }
 
 function renderCharts(fm, avgs){
