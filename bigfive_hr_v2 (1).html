@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Five HR — 採用・組織診断ツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f7f4;--surface:#fff;--border:#e5e3de;--border2:#d0cdc6;
+  --text:#1a1917;--muted:#6b6966;--hint:#a09d99;
+  --O:#7F77DD;--C:#1D9E75;--E:#378ADD;--A:#EF9F27;--N:#D85A30;
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;gap:0}
+.nav-brand{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-right:2rem;letter-spacing:-.02em}
+.nav-brand span{color:var(--C)}
+.nav-tab{font-size:13px;padding:0 16px;height:52px;display:flex;align-items:center;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;margin-bottom:-1px;transition:all .15s}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+.page{display:none;min-height:calc(100vh - 52px)}
+.page.active{display:block}
+
+/* === DIAGNOSIS === */
+.diag-wrap{max-width:640px;margin:0 auto;padding:3rem 1.5rem}
+.label-sm{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--hint);margin-bottom:.75rem}
+.diag-hero{text-align:center;margin-bottom:2.5rem}
+.diag-hero h1{font-size:32px;font-weight:300;letter-spacing:-.03em;margin-bottom:.5rem}
+.diag-hero h1 strong{font-weight:600}
+.diag-hero p{font-size:14px;color:var(--muted);line-height:1.6}
+
+.name-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+.field-label{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px;display:block}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field-row:last-child{margin-bottom:0}
+input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border .15s}
+input:focus,select:focus{border-color:var(--border2)}
+
+.prog-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--hint);margin-bottom:6px}
+.prog-bar{height:3px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:1.5rem}
+.prog-fill{height:100%;background:var(--text);border-radius:999px;transition:width .35s ease}
+
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-axis-tag{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--hint);margin-bottom:.75rem}
+.q-text{font-size:15px;font-weight:500;line-height:1.5;margin-bottom:1.25rem}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);text-align:left;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);transition:all .15s}
+.choice:hover{border-color:var(--border2);background:var(--bg)}
+.choice.selected{border-color:var(--text);background:var(--bg)}
+.dot{width:16px;height:16px;border-radius:50%;border:1px solid var(--border2);flex-shrink:0;transition:all .15s}
+.choice.selected .dot{background:var(--text);border-color:var(--text)}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center}
+.btn-ghost{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:999px;padding:7px 18px;cursor:pointer}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-main{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:var(--text);color:#fff;border:none;border-radius:999px;padding:9px 24px;cursor:pointer;opacity:.4;pointer-events:none;transition:all .15s}
+.btn-main.on{opacity:1;pointer-events:all}
+
+.loading{text-align:center;padding:4rem 0;display:none}
+.loading.show{display:block}
+.spinner{display:inline-block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:13px;color:var(--muted)}
+
+.result{display:none;animation:fadeUp .3s ease}
+.result.show{display:block}
+.result-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;text-align:center;margin-bottom:1.25rem}
+.ocean-bars{display:flex;flex-direction:column;gap:10px;margin:1.25rem 0}
+.bar-row{display:grid;grid-template-columns:90px 1fr 40px;align-items:center;gap:10px}
+.bar-key{font-size:12px;color:var(--muted);text-align:right}
+.bar-track{height:6px;background:var(--bg);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:999px}
+.bar-pct{font-size:12px;font-weight:500}
+
+.ai-block{background:var(--bg);border-left:3px solid var(--C);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.ai-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--hint);margin-bottom:6px}
+.ai-text{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* 送信完了 */
+.sent-box{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:var(--radius);padding:1.5rem;text-align:center;margin-bottom:1rem}
+.sent-box .icon{font-size:32px;margin-bottom:.5rem}
+.sent-box h3{font-size:16px;font-weight:500;color:#085041;margin-bottom:.25rem}
+.sent-box p{font-size:13px;color:#0F6E56}
+
+.retry-btn{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;background:none;border:1px solid var(--border);border-radius:999px;padding:10px;color:var(--muted);cursor:pointer;margin-top:.75rem}
+.retry-btn:hover{color:var(--text);border-color:var(--border2)}
+
+/* === DASHBOARD === */
+.dash-wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.dash-header h2{font-size:22px;font-weight:500;letter-spacing:-.02em}
+.dash-header p{font-size:13px;color:var(--muted);margin-top:4px}
+.dash-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-select{font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+.reload-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:var(--C);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.reload-btn:hover{opacity:.85}
+
+.gs-notice{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem}
+.gs-notice.connected{border-color:#9FE1CB;background:#E1F5EE}
+.gs-notice.error{border-color:#F0997B;background:#FAECE7}
+.gs-status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.gs-dot{width:8px;height:8px;border-radius:50%;background:var(--hint)}
+.gs-dot.ok{background:var(--C)}
+.gs-dot.err{background:var(--N)}
+.gs-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.stat-label{font-size:11px;color:var(--hint);margin-bottom:4px}
+.stat-val{font-size:24px;font-weight:500;font-family:'Space Grotesk',sans-serif}
+.stat-sub{font-size:11px;color:var(--hint);margin-top:2px}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:1rem}
+.chart-wrap{position:relative;width:100%;height:220px}
+
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}
+.table-head{display:grid;grid-template-columns:150px 120px repeat(5,1fr) 80px 80px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--hint);gap:8px;align-items:center}
+.member-row{display:grid;grid-template-columns:150px 120px repeat(5,1fr) 80px 80px;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px;align-items:center;transition:background .1s;cursor:pointer}
+.member-row:last-child{border-bottom:none}
+.member-row:hover{background:var(--bg)}
+.member-name{font-size:13px;font-weight:500}
+.member-role-label{font-size:11px;color:var(--hint);margin-top:1px}
+.status-badge{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500;white-space:nowrap}
+.status-candidate{background:#E6F1FB;color:#0C447C}
+.status-member{background:#E1F5EE;color:#085041}
+.mini-bar-wrap{display:flex;flex-direction:column;gap:2px}
+.mini-bar-track{height:4px;background:var(--bg);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.mini-bar-fill{height:100%;border-radius:999px}
+.pct-lbl{font-size:10px;color:var(--hint);margin-top:1px}
+.fit-score{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600}
+.fit-high{color:var(--C)} .fit-mid{color:var(--A)} .fit-low{color:var(--N)}
+.detail-btn{font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif}
+.detail-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:520px;max-height:85vh;overflow-y:auto}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem}
+.modal-close{font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted)}
+.modal-bar-row{display:grid;grid-template-columns:100px 1fr 40px;align-items:center;gap:10px;margin-bottom:10px}
+
+/* lock */
+.lock-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;align-items:center;justify-content:center}
+.lock-screen.show{display:flex}
+.lock-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;width:100%;max-width:360px;text-align:center}
+.lock-box h2{font-size:18px;font-weight:500;margin-bottom:.5rem}
+.lock-box p{font-size:13px;color:var(--muted);margin-bottom:1.25rem}
+.lock-box input{width:100%;margin-bottom:10px;text-align:center;letter-spacing:.2em;font-size:15px}
+.lock-box button{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;background:var(--text);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px;cursor:pointer}
+.lock-err{font-size:12px;color:var(--N);margin-top:8px;display:none}
+
+/* setup modal */
+.setup-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+.setup-step{display:flex;gap:12px;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.setup-step:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:2px}
+.step-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.step-desc{font-size:12px;color:var(--muted);line-height:1.55}
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-family:monospace;font-size:11px;color:var(--muted);margin-top:6px;white-space:pre-wrap;word-break:break-all}
+.copy-code-btn{font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);margin-top:6px;display:inline-block}
+.copy-code-btn:hover{color:var(--text)}
+.url-save-row{display:flex;gap:8px;margin-top:8px}
+.url-save-row input{flex:1;font-size:13px}
+.url-save-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:var(--C);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;white-space:nowrap}
+
+.empty-state{text-align:center;padding:3rem;color:var(--hint);font-size:13px}
+.fetch-loading{text-align:center;padding:2rem;color:var(--hint);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div style="font-size:28px;margin-bottom:.75rem">🔐</div>
+    <h2>ダッシュボード</h2>
+    <p>管理者コードを入力してください</p>
+    <input type="password" id="lockInput" placeholder="••••" maxlength="20">
+    <button onclick="checkLock()">ログイン</button>
+    <div class="lock-err" id="lockErr">コードが違います</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">Big<span>Five</span> HR</div>
+  <button class="nav-tab active" id="tabDiag" onclick="switchPage('diag',this)">診断</button>
+  <button class="nav-tab" id="tabDash" onclick="openDash(this)">ダッシュボード</button>
+</nav>
+
+<!-- DIAGNOSIS PAGE -->
+<div class="page active" id="page-diag">
+<div class="diag-wrap">
+  <div class="diag-hero">
+    <div class="label-sm">Big Five — OCEAN Assessment</div>
+    <h1><strong>性格特性診断</strong></h1>
+    <p>採用・組織開発のための科学的パーソナリティ測定<br>所要時間：約5〜8分</p>
+  </div>
+
+  <div id="startForm">
+    <div class="name-form">
+      <div style="margin-bottom:10px">
+        <label class="field-label">氏名 *</label>
+        <input type="text" id="inputName" placeholder="田中 太郎">
+      </div>
+      <div>
+        <label class="field-label">出身大学 *</label>
+        <input type="text" id="inputUniv" placeholder="○○大学 経済学部">
+      </div>
+    </div>
+    <div style="text-align:center"><button class="btn-main on" onclick="startDiag()">診断を開始する →</button></div>
+  </div>
+
+  <div id="quizArea" style="display:none">
+    <div class="prog-meta"><span id="qNum">1 / 20</span><span id="qPct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div class="q-card" id="qCard">
+
+      <div class="q-text" id="qText"></div>
+      <div class="choices" id="qChoices"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" onclick="prevQ()">← 戻る</button>
+      <button class="btn-main" id="nextBtn" onclick="nextQ()">次へ</button>
+    </div>
+  </div>
+
+  <div class="loading" id="diagLoading">
+    <div class="spinner"></div>
+    <p id="loadMsg">AIが回答を分析しています...</p>
+  </div>
+
+  <div class="result" id="diagResult"></div>
+</div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="page-dash">
+<div class="dash-wrap">
+  <div class="dash-header">
+    <div>
+      <h2>メンバー管理ダッシュボード</h2>
+      <p>採用候補者のBig Fiveスコアを一元管理・比較</p>
+    </div>
+    <div class="dash-actions">
+
+      <button class="reload-btn" onclick="fetchFromSheet()">↻ 最新を取得</button>
+    </div>
+  </div>
+
+  <!-- GS Status -->
+  <div class="gs-notice" id="gsNotice">
+    <div class="gs-status"><div class="gs-dot" id="gsDot"></div><span id="gsStatusText">Google スプレッドシート未接続</span></div>
+    <div class="gs-sub" id="gsSub">下のセットアップを完了するとスコアが自動で集まります</div>
+  </div>
+
+  <!-- Setup guide -->
+  <div class="setup-box" id="setupBox">
+    <div style="font-size:13px;font-weight:500;margin-bottom:1rem">⚙️ 初期設定（1回だけ）</div>
+
+    <div class="setup-step">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Google スプレッドシートを新規作成</div>
+        <div class="step-desc">Googleドライブで新しいスプレッドシートを作成してください。名前は何でもOKです（例：BigFive診断結果）</div>
+        <a href="https://sheets.new" target="_blank" style="display:inline-block;margin-top:6px;font-size:12px;color:var(--E);text-decoration:none;border:1px solid var(--E);border-radius:var(--radius-sm);padding:5px 12px">→ sheets.new で作成</a>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Apps Script を設定</div>
+        <div class="step-desc">スプレッドシートのメニュー「拡張機能」→「Apps Script」を開き、以下のコードを貼り付けて保存してください</div>
+        <div class="code-block" id="gasCode"></div>
+        <button class="copy-code-btn" onclick="copyGasCode()">📋 コードをコピー</button>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">ウェブアプリとして公開</div>
+        <div class="step-desc">Apps Scriptで「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選択。<br>「アクセスできるユーザー」を <strong>「全員」</strong> に設定して「デプロイ」をクリック。<br>表示されたURLをコピーして下に貼り付けてください。</div>
+        <div class="url-save-row">
+          <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+          <button class="url-save-btn" onclick="saveGasUrl()">保存して接続</button>
+        </div>
+        <div id="urlSaveMsg" style="font-size:12px;margin-top:6px;display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUP TABS -->
+  <div id="groupTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
+
+  <!-- COMPARE CHART -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
+    <div style="font-size:13px;font-weight:500;margin-bottom:.75rem">📊 グループ比較レーダーチャート</div>
+    <div style="position:relative;width:100%;height:280px"><canvas id="compareRadar" role="img" aria-label="グループ比較"></canvas></div>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-label">総人数</div><div class="stat-val">—</div></div>
+    <div class="stat-card"><div class="stat-label">平均適合度</div><div class="stat-val">—</div></div>
+    <div class="stat-card"><div class="stat-label">候補者</div><div class="stat-val">—</div></div>
+    <div class="stat-card"><div class="stat-label">メンバー</div><div class="stat-val">—</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">チーム平均 OCEAN プロファイル</div>
+      <div class="chart-wrap"><canvas id="radarChart" role="img" aria-label="OceanレーダーチャートチームのOCEAN平均スコア"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">特性別スコア分布</div>
+      <div class="chart-wrap"><canvas id="barChart" role="img" aria-label="特性別棒グラフ各OCEAN特性の平均スコア"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>氏名</div><div>出身大学</div>
+      <div>O 開放性</div><div>C 誠実性</div><div>E 外向性</div><div>A 協調性</div><div>N 神経症</div>
+      <div>適合度</div><div>詳細</div>
+    </div>
+    <div id="memberList"><div class="empty-state">「最新を取得」ボタンでデータを読み込んでください</div></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===== CONFIG =====
+// ★ 管理者コードを変更する場合はここを編集
+const ADMIN_CODE = 'nailit-0916';
+
+const GAS_CODE = `function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+    // ヘッダー行がなければ追加
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['タイムスタンプ','氏名','区分','出身大学','役職',
+        'O_開放性','C_誠実性','E_外向性','A_協調性','N_神経症傾向',
+        '営業適合度','AIコメント','強み','注意点','営業適性']);
+    }
+
+    sheet.appendRow([
+      new Date().toLocaleString('ja-JP'),
+      data.name, data.status, data.dept, data.role,
+      data.O, data.C, data.E, data.A, data.N,
+      data.fitScore, data.summary, data.strength, data.caution, data.salesFit
+    ]);
+
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'ok'})
+    ).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'error', message: err.toString()})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const rows = sheet.getDataRange().getValues();
+    if (rows.length <= 1) {
+      return ContentService.createTextOutput(
+        JSON.stringify({status:'ok', data:[]})
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+    const headers = rows[0];
+    const data = rows.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    });
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'ok', data})
+    ).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({status:'error', message: err.toString()})
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+document.getElementById('gasCode').textContent = GAS_CODE;
+
+const QS = [
+  {ax:'O',axL:'開放性',t:'新しいアイデアや概念について考えることを楽しむ',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'C',axL:'誠実性',t:'仕事や作業は期限より早めに終わらせる方だ',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'E',axL:'外向性',t:'パーティーや集まりでは積極的に人に話しかける',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'A',axL:'協調性',t:'他の人が困っていると、自分のことより先に助けたいと思う',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'N',axL:'神経症傾向',t:'小さなことでも心配したり、不安になりやすい',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'O',axL:'開放性',t:'芸術・音楽・文学などに深く引き込まれることがある',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'C',axL:'誠実性',t:'部屋や机の上は常に整理整頓されている',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'E',axL:'外向性',t:'1日中人と話していてもエネルギーが続く',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'A',axL:'協調性',t:'対立や口論は極力避けるようにしている',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'N',axL:'神経症傾向',t:'気分が落ち込んだり、情緒が不安定になることがよくある',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'O',axL:'開放性',t:'複雑な哲学的・社会的問題について考えるのが好きだ',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'C',axL:'誠実性',t:'一度決めたことはしっかりやり遂げる',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'E',axL:'外向性',t:'初対面の人との会話も得意で、すぐに打ち解けられる',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'A',axL:'協調性',t:'他の人の感情や気持ちを敏感に感じ取れる',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'N',axL:'神経症傾向',t:'ストレスのある状況では頭が真っ白になりやすい',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'O',axL:'開放性',t:'新しい場所や文化に積極的に触れたいと思う',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'C',axL:'誠実性',t:'計画なしに行動することへの抵抗感がある',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'E',axL:'外向性',t:'グループの中で中心的な役割を担うことが多い',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'A',axL:'協調性',t:'人を批判するより褒めることの方が自然だ',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+  {ax:'N',axL:'神経症傾向',t:'重要な決断の前は長い間心配が続く',c:[{l:'とても当てはまる',s:4},{l:'まあ当てはまる',s:3},{l:'あまり当てはまらない',s:2},{l:'全く当てはまらない',s:1}]},
+];
+
+const COLORS={O:'#7F77DD',C:'#1D9E75',E:'#378ADD',A:'#EF9F27',N:'#D85A30'};
+const LABELS={O:'開放性',C:'誠実性',E:'外向性',A:'協調性',N:'神経症傾向'};
+const TRAITS=['O','C','E','A','N'];
+
+let answers={}, curQ=0, rawScores={O:0,C:0,E:0,A:0,N:0};
+let userInfo={};
+let members=[];
+let radarInst=null, barInst=null;
+let dashUnlocked=false;
+let gasUrl='';
+
+// ===== INIT =====
+function init(){
+  gasUrl=localStorage.getItem('bf_gas_url')||'https://script.google.com/macros/s/AKfycbwJUemu_ucNuKDzoQIqLfTKr0FcaGi6pHxUsV9UXXmRc4oRvHL_lxoSJp3xGJjl35yadg/exec';
+  if(gasUrl) document.getElementById('gasUrlInput').value=gasUrl;
+  updateGsStatus();
+}
+
+function updateGsStatus(){
+  const dot=document.getElementById('gsDot');
+  const txt=document.getElementById('gsStatusText');
+  const sub=document.getElementById('gsSub');
+  const notice=document.getElementById('gsNotice');
+  if(gasUrl){
+    dot.className='gs-dot ok';
+    txt.textContent='Google スプレッドシート接続済み';
+    sub.textContent='診断完了後、自動でスプレッドシートに送信されます';
+    notice.className='gs-notice connected';
+    document.getElementById('setupBox').style.display='none';
+  } else {
+    dot.className='gs-dot';
+    txt.textContent='Google スプレッドシート未接続';
+    sub.textContent='下のセットアップを完了するとスコアが自動で集まります';
+    notice.className='gs-notice';
+    document.getElementById('setupBox').style.display='block';
+  }
+}
+
+function saveGasUrl(){
+  const url=document.getElementById('gasUrlInput').value.trim();
+  const msg=document.getElementById('urlSaveMsg');
+  if(!url.startsWith('https://script.google.com')){
+    msg.style.display='block';msg.style.color='var(--N)';
+    msg.textContent='Apps ScriptのURLを入力してください';return;
+  }
+  gasUrl=url;
+  localStorage.setItem('bf_gas_url',url);
+  updateGsStatus();
+  msg.style.display='block';msg.style.color='var(--C)';
+  msg.textContent='✓ 接続しました！';
+  setTimeout(()=>{msg.style.display='none';},3000);
+}
+
+function copyGasCode(){
+  navigator.clipboard.writeText(GAS_CODE).then(()=>{
+    const btn=event.target;btn.textContent='✓ コピーしました';
+    setTimeout(()=>btn.textContent='📋 コードをコピー',2000);
+  });
+}
+
+// ===== LOCK =====
+function checkLock(){
+  const v=document.getElementById('lockInput').value;
+  if(v===ADMIN_CODE){
+    document.getElementById('lockScreen').classList.remove('show');
+    dashUnlocked=true;
+    updateGsStatus();
+    fetchFromSheet();
+  } else {
+    document.getElementById('lockErr').style.display='block';
+    document.getElementById('lockInput').value='';
+  }
+}
+document.getElementById('lockInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkLock();});
+
+function switchPage(id,btn){
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+}
+
+function openDash(btn){
+  if(!dashUnlocked){
+    document.getElementById('lockScreen').classList.add('show');
+    return;
+  }
+  switchPage('dash',btn);
+}
+
+// ===== DIAGNOSIS =====
+function startDiag(){
+  const name=document.getElementById('inputName').value.trim();
+  const univ=document.getElementById('inputUniv').value.trim();
+  if(!name||!univ){alert('氏名と出身大学を入力してください');return;}
+  userInfo={name,status:'candidate',dept:'',role:'',univ};
+  answers={};rawScores={O:0,C:0,E:0,A:0,N:0};curQ=0;
+  document.getElementById('startForm').style.display='none';
+  document.getElementById('quizArea').style.display='block';
+  renderQ();
+}
+
+function renderQ(){
+  const q=QS[curQ];
+  const total=QS.length;
+  document.getElementById('qNum').textContent=(curQ+1)+' / '+total;
+  const pct=Math.round((curQ/total)*100);
+  document.getElementById('qPct').textContent=pct+'%';
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('qText').textContent=q.t;
+  const sel=answers[curQ];
+  document.getElementById('qChoices').innerHTML=q.c.map((c,i)=>`
+    <button class="choice${sel===i?' selected':''}" onclick="selectChoice(${i})">
+      <span class="dot"></span><span>${c.l}</span>
+    </button>`).join('');
+  const nb=document.getElementById('nextBtn');
+  nb.textContent=curQ===total-1?'結果を見る':'次へ';
+  nb.className='btn-main'+(sel!==undefined?' on':'');
+}
+
+function selectChoice(i){
+  answers[curQ]=i;
+  document.querySelectorAll('.choice').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
+  document.getElementById('nextBtn').classList.add('on');
+}
+function prevQ(){if(curQ>0){curQ--;renderQ();}}
+function nextQ(){
+  if(answers[curQ]===undefined)return;
+  rawScores[QS[curQ].ax]+=QS[curQ].c[answers[curQ]].s;
+  if(curQ<QS.length-1){curQ++;renderQ();}
+  else runAI();
+}
+
+function toPercent(raw,count){return Math.round((raw/(count*4))*100);}
+
+async function runAI(){
+  document.getElementById('quizArea').style.display='none';
+  const ld=document.getElementById('diagLoading');
+  ld.classList.add('show');
+  const msgs=['AIが回答を分析しています...','パターンを照合中...','性格プロファイルを生成中...','スプレッドシートに送信中...'];
+  let mi=0;
+  const iv=setInterval(()=>{document.getElementById('loadMsg').textContent=msgs[Math.min(++mi,msgs.length-1)];},900);
+
+  const counts={O:4,C:4,E:4,A:4,N:4};
+  const pcts={};
+  TRAITS.forEach(k=>pcts[k]=toPercent(rawScores[k],counts[k]));
+
+  const summary=TRAITS.map(k=>`${LABELS[k]}:${pcts[k]}%`).join(', ');
+  const prompt=`あなたはBig Five性格検査の専門家です。${userInfo.name}（採用候補者、${userInfo.univ||''}）のスコア: ${summary}
+
+JSON形式のみで返してください:
+{
+  "summary": "この人の性格を2〜3文で（「あなたは〜」で始める）",
+  "strength": "最も高いスコアの特性を活かした強み（1文）",
+  "caution": "注意が必要な点（1文）",
+  "salesFit": "営業職への適合コメント（1文）",
+  "fitScore": 0から100の数値（営業部門への適合度）
+}`;
+
+  let ai={summary:'',strength:'',caution:'',salesFit:'',fitScore:50};
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    const raw=d.content?.find(b=>b.type==='text')?.text||'';
+    ai=JSON.parse(raw.replace(/```json|```/g,'').trim());
+  }catch(e){}
+
+  // send to GAS
+  const payload={
+    name:userInfo.name, status:'candidate', dept:userInfo.univ, role:'',
+    O:pcts.O, C:pcts.C, E:pcts.E, A:pcts.A, N:pcts.N,
+    fitScore:ai.fitScore||0,
+    summary:ai.summary||'', strength:ai.strength||'', caution:ai.caution||'', salesFit:ai.salesFit||''
+  };
+  let sent=false;
+  if(gasUrl){
+    try{
+      await fetch(gasUrl,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
+      sent=true;
+    }catch(e){}
+  }
+
+  clearInterval(iv);
+  ld.classList.remove('show');
+  showResult(pcts, ai, sent);
+}
+
+function showResult(pcts, ai, sent){
+  const OCEAN_INFO = {
+    O:{name:'開放性',en:'Openness',color:'#7F77DD',bg:'#EEEDFE',textColor:'#3C3489',
+       desc:'新しいアイデアや体験への好奇心・柔軟性を示します。高いほど創造的で探求心が強い傾向があります。'},
+    C:{name:'誠実性',en:'Conscientiousness',color:'#1D9E75',bg:'#E1F5EE',textColor:'#085041',
+       desc:'計画性・自己管理・責任感の強さを示します。高いほど目標に向けて粘り強く取り組む傾向があります。'},
+    E:{name:'外向性',en:'Extraversion',color:'#378ADD',bg:'#E6F1FB',textColor:'#0C447C',
+       desc:'人との関わりからエネルギーを得る度合いを示します。高いほど社交的で行動力がある傾向があります。'},
+    A:{name:'協調性',en:'Agreeableness',color:'#EF9F27',bg:'#FAEEDA',textColor:'#633806',
+       desc:'他者への共感・思いやり・協力する姿勢を示します。高いほどチームワークを大切にする傾向があります。'},
+    N:{name:'感情安定性',en:'Emotional Stability',color:'#D85A30',bg:'#FAECE7',textColor:'#712B13',
+       desc:'感情の安定さとストレス耐性を示します。スコアが高いほど落ち着いて物事に対処できる傾向があります。'}
+  };
+  // Nは反転して表示（低いほど安定 → 高いほど安定として見せる）
+  const displayPcts = {...pcts, N: 100 - pcts.N};
+
+  const strengthHtml = ai.summary || ai.strength
+    ? `<div style="background:#E1F5EE;border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;border-left:3px solid #1D9E75">
+        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#0F6E56;margin-bottom:8px">あなたの強み</div>
+        <div style="font-size:14px;color:#085041;line-height:1.7">${ai.strength||ai.summary}</div>
+       </div>`
+    : '';
+
+  const barsHtml = TRAITS.map(k => {
+    const info = OCEAN_INFO[k];
+    const val = displayPcts[k];
+    return `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:${info.bg};color:${info.color};font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center">${k}</span>
+            <span style="font-size:13px;font-weight:500">${info.name}</span>
+            <span style="font-size:11px;color:var(--hint)">${info.en}</span>
+          </div>
+          <span style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:${info.color}">${val}%</span>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:999px;overflow:hidden;border:1px solid var(--border)">
+          <div style="height:100%;width:${val}%;background:${info.color};border-radius:999px;transition:width 1s ease"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const cardsHtml = TRAITS.map(k => {
+    const info = OCEAN_INFO[k];
+    const val = displayPcts[k];
+    const level = val >= 70 ? '高い' : val >= 40 ? '中程度' : '低い';
+    const levelColor = val >= 70 ? info.color : val >= 40 ? 'var(--muted)' : 'var(--hint)';
+    return `
+      <div onclick="toggleCard('card-${k}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:32px;height:32px;border-radius:50%;background:${info.bg};color:${info.color};font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center">${k}</span>
+            <div>
+              <div style="font-size:13px;font-weight:500">${info.name}</div>
+              <div style="font-size:10px;color:var(--hint)">${info.en}</div>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:500;color:${levelColor};background:${info.bg};padding:3px 10px;border-radius:999px">${level}</span>
+        </div>
+        <div id="card-${k}" style="display:none;font-size:12px;color:var(--muted);line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${info.desc}</div>
+        <div style="font-size:11px;color:var(--hint);margin-top:4px;text-align:right">タップして解説を見る ↓</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('diagResult').innerHTML=`
+    <div style="text-align:center;padding:2.5rem 0 2rem">
+      <div style="font-size:48px;margin-bottom:1rem">🎉</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:500;letter-spacing:-.02em;margin-bottom:.5rem">${userInfo.name}さん、<br>ありがとうございました！</div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.7">診断が完了しました。結果は採用担当者が確認いたします。<br>あなたの特性プロファイルをご覧ください。</div>
+    </div>
+
+    ${strengthHtml}
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem">
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--hint);margin-bottom:1rem">あなたの特性プロファイル（5軸）</div>
+      ${barsHtml}
+    </div>
+
+    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--hint);margin-bottom:10px">各特性の解説</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem">
+      ${cardsHtml}
+    </div>
+
+    <button class="retry-btn" onclick="retryDiag()">← トップに戻る</button>
+  `;
+  document.getElementById('diagResult').classList.add('show');
+}
+
+function toggleCard(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  const hint = el.nextElementSibling;
+  if(hint) hint.textContent = isOpen ? 'タップして解説を見る ↓' : '閉じる ↑';
+}
+
+function retryDiag(){
+  document.getElementById('diagResult').classList.remove('show');
+  document.getElementById('diagResult').innerHTML='';
+  document.getElementById('startForm').style.display='block';
+  document.getElementById('inputName').value='';
+  document.getElementById('inputUniv').value='';
+}
+
+// ===== DASHBOARD / SHEET FETCH =====
+const GROUP_NAMES=['元データ','従業員','27新卒','一次選考通過','内定出し','内定承諾'];
+const GROUP_COLORS={'元データ':'#888','従業員':'#1D9E75','27新卒':'#378ADD','一次選考通過':'#7F77DD','内定出し':'#EF9F27','内定承諾':'#D85A30'};
+let groupData={};
+let activeGroup='元データ';
+let compareInst=null;
+
+async function fetchFromSheet(){
+  if(!gasUrl){
+    document.getElementById('memberList').innerHTML='<div class="empty-state">スプレッドシートが未設定です。<br>セットアップを完了してください。</div>';
+    return;
+  }
+  document.getElementById('memberList').innerHTML='<div class="fetch-loading"><div class="spinner" style="display:inline-block;width:20px;height:20px;border:2px solid #e5e3de;border-top-color:#1a1917;border-radius:50%;animation:spin .8s linear infinite"></div><br>データを取得中...</div>';
+  try{
+    const r=await fetch(gasUrl+'?action=get');
+    const d=await r.json();
+    if(d.status==='ok'){
+      members=d.data.map((row,i)=>({
+        id:i,
+        name:row['氏名']||'',
+        status:row['区分']||'',
+        dept:row['出身大学']||'',
+        role:row['役職']||'',
+        ts:row['タイムスタンプ']||'',
+        pcts:{O:+row['O_開放性']||0,C:+row['C_誠実性']||0,E:+row['E_外向性']||0,A:+row['A_協調性']||0,N:+row['N_神経症傾向']||0},
+        ai:{fitScore:+row['営業適合度']||0,summary:row['AIコメント']||'',strength:row['強み']||'',caution:row['注意点']||'',salesFit:row['営業適性']||''}
+      }));
+      renderDash();
+    }
+  }catch(e){
+    document.getElementById('memberList').innerHTML='<div class="empty-state">データの取得に失敗しました。<br>Apps ScriptのURLと公開設定を確認してください。</div>';
+  }
+}
+
+function filteredMembers(){
+  return groupData[activeGroup]||members;
+}
+
+function setActiveGroup(name){
+  activeGroup=name;
+  members=groupData[name]||[];
+  renderDash();
+}
+
+function calcAvgs(arr){
+  const avgs={};
+  TRAITS.forEach(k=>{avgs[k]=arr.length?Math.round(arr.reduce((a,m)=>a+(m.pcts?.[k]||0),0)/arr.length):0;});
+  return avgs;
+}
+
+function renderGroupTabs(){
+  const el=document.getElementById('groupTabs');
+  if(!el)return;
+  el.innerHTML=GROUP_NAMES.map(name=>{
+    const count=(groupData[name]||[]).length;
+    const isActive=name===activeGroup;
+    const col=GROUP_COLORS[name];
+    return `<button onclick="setActiveGroup('${name}')" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 14px;border-radius:999px;border:1px solid ${isActive?col:'var(--border)'};background:${isActive?col:'var(--surface)'};color:${isActive?'#fff':'var(--muted)'};cursor:pointer">${name} (${count})</button>`;
+  }).join('');
+  renderCompareChart();
+}
+
+function renderCompareChart(){
+  if(compareInst)compareInst.destroy();
+  const ctx=document.getElementById('compareRadar');
+  if(!ctx)return;
+  const datasets=GROUP_NAMES.filter(n=>(groupData[n]||[]).length>0).map(name=>{
+    const arr=groupData[name]||[];
+    const avgs=calcAvgs(arr);
+    const col=GROUP_COLORS[name];
+    return{label:name+' ('+arr.length+'名)',data:TRAITS.map(k=>avgs[k]),backgroundColor:col+'22',borderColor:col,borderWidth:2,pointBackgroundColor:col,pointRadius:3};
+  });
+  compareInst=new Chart(ctx.getContext('2d'),{
+    type:'radar',
+    data:{labels:TRAITS.map(k=>LABELS[k]),datasets},
+    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,font:{size:10}},pointLabels:{font:{size:11}}}},plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}}}}
+  });
+}
+
+function fitClass(s){return s>=70?'fit-high':s>=50?'fit-mid':'fit-low';}
+
+function renderDash(){
+  const fm=filteredMembers();
+  const avgFit=fm.length?Math.round(fm.reduce((a,m)=>(a+(m.ai?.fitScore||0)),0)/fm.length):0;
+  const avgs=calcAvgs(fm);
+  renderGroupTabs();
+
+  const highFit=fm.filter(m=>(m.ai?.fitScore||0)>=70).length;
+  const topUniv=fm.length?fm.reduce((a,m)=>((m.ai?.fitScore||0)>(a.ai?.fitScore||0)?m:a),fm[0])?.dept||'—':'—';
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card"><div class="stat-label">候補者数</div><div class="stat-val">${members.length}</div><div class="stat-sub">診断済み</div></div>
+    <div class="stat-card"><div class="stat-label">平均営業適合度</div><div class="stat-val" style="color:var(--C)">${avgFit}%</div><div class="stat-sub">全候補者</div></div>
+    <div class="stat-card"><div class="stat-label">高適合（70%以上）</div><div class="stat-val" style="color:var(--C)">${highFit}</div><div class="stat-sub">名</div></div>
+    <div class="stat-card"><div class="stat-label">最高適合スコア</div><div class="stat-val" style="color:var(--A)">${fm.length?(Math.max(...fm.map(m=>m.ai?.fitScore||0)))+'%':'—'}</div><div class="stat-sub">トップ候補者</div></div>
+  `;
+
+  if(fm.length===0){
+    document.getElementById('memberList').innerHTML='<div class="empty-state">まだデータがありません。<br>メンバーに診断を送って結果を集めましょう。</div>';
+  } else {
+    document.getElementById('memberList').innerHTML=fm.map(m=>{
+      const p=m.pcts||{};
+      const fit=m.ai?.fitScore||0;
+      const statusLabel='採用候補者';
+      const statusClass='status-candidate';
+      return `<div class="member-row" onclick="showModal(${m.id})">
+        <div><div class="member-name">${m.name}</div><div class="member-role-label">${m.dept||''}</div></div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.4">${m.dept||'—'}</div>
+        ${TRAITS.map(k=>`<div class="mini-bar-wrap"><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${p[k]||0}%;background:${COLORS[k]}"></div></div><div class="pct-lbl">${p[k]||0}%</div></div>`).join('')}
+        <div class="fit-score ${fitClass(fit)}">${fit}%</div>
+        <div><button class="detail-btn" onclick="event.stopPropagation();showModal(${m.id})">詳細</button></div>
+      </div>`;
+    }).join('');
+  }
+
+  renderCharts(fm, avgs);
+  renderCompareChart();
+}
+
+function renderCharts(fm, avgs){
+  if(radarInst)radarInst.destroy();
+  radarInst=new Chart(document.getElementById('radarChart').getContext('2d'),{
+    type:'radar',
+    data:{labels:TRAITS.map(k=>LABELS[k]),datasets:[{label:'チーム平均',data:TRAITS.map(k=>avgs[k]),backgroundColor:'rgba(29,158,117,.15)',borderColor:'#1D9E75',borderWidth:2,pointBackgroundColor:'#1D9E75',pointRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,font:{size:10}},pointLabels:{font:{size:11}}}},plugins:{legend:{display:false}}}
+  });
+  if(barInst)barInst.destroy();
+  barInst=new Chart(document.getElementById('barChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:TRAITS.map(k=>LABELS[k]),datasets:[{label:'平均',data:TRAITS.map(k=>avgs[k]),backgroundColor:TRAITS.map(k=>COLORS[k]),borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{stepSize:25,font:{size:10}}}},plugins:{legend:{display:false}}}
+  });
+}
+
+function showModal(id){
+  const m=members.find(x=>x.id===id);
+  if(!m)return;
+  const p=m.pcts||{};
+  const fit=m.ai?.fitScore||0;
+  const fitCol=fit>=70?'var(--C)':fit>=50?'var(--A)':'var(--N)';
+  const statusLabel=m.status==='candidate'?'候補者':'メンバー';
+  const statusClass=m.status==='candidate'?'status-candidate':'status-member';
+  document.getElementById('modalContent').innerHTML=`
+    <div class="modal-header">
+      <div>
+        <div style="font-size:18px;font-weight:500;font-family:'Space Grotesk',sans-serif">${m.name}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${m.dept||''}</div>
+        <div style="margin-top:6px"><span class="status-badge ${statusClass}">${statusLabel}</span></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">閉じる</button>
+    </div>
+    <div style="margin-bottom:1.25rem">${TRAITS.map(k=>`
+      <div class="modal-bar-row">
+        <div style="font-size:12px;color:var(--muted);text-align:right">${LABELS[k]}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p[k]||0}%;background:${COLORS[k]}"></div></div>
+        <div style="font-size:12px;font-weight:500;color:${COLORS[k]}">${p[k]||0}%</div>
+      </div>`).join('')}</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:1rem">
+      <span style="font-size:13px;color:var(--muted)">営業適合度</span>
+      <span style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:${fitCol}">${fit}%</span>
+    </div>
+    ${m.ai?.summary?`<div class="ai-block" style="margin-bottom:.75rem">
+      <div class="ai-label">AIコメント</div>
+      <div class="ai-text">${m.ai.summary}</div>
+      ${m.ai.strength?`<div class="ai-text" style="margin-top:6px"><strong>強み：</strong>${m.ai.strength}</div>`:''}
+      ${m.ai.caution?`<div class="ai-text"><strong>注意：</strong>${m.ai.caution}</div>`:''}
+      ${m.ai.salesFit?`<div class="ai-text"><strong>営業適性：</strong>${m.ai.salesFit}</div>`:''}
+    </div>`:''}
+    <div style="font-size:11px;color:var(--hint);text-align:right">診断日: ${m.ts||'-'}</div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
+
+init();
+</script>
+</body>
+</html>
